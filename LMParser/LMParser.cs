@@ -16,15 +16,6 @@ namespace LMParser
 {
     public class LMParser : SiteParser<LMProduct>
     {
-        private readonly Dictionary<string, string> _cookies = new Dictionary<string, string>()
-        {
-            {"main_a_b", "1" },
-            {"disp_react_aa", "1" },
-            { "_ym_uid","160952758022028353"},
-            { "_ym_isad", "1"},
-            { "_ym_d", "1609527580"}
-        };
-
         private readonly Lazy<ChromeDriver> _webDriver;
         private readonly Lazy<HttpClient> _httpClient;
 
@@ -67,7 +58,7 @@ namespace LMParser
             }
         }
 
-        protected override async Task<string> GetListContent(string listUrl) 
+        protected override async Task<string> GetListContent(string listUrl)
             => await HttpClient.GetStringAsync(listUrl);
 
         protected override Task<string> GetItemContent(string itemUrl)
@@ -123,7 +114,10 @@ namespace LMParser
                 CookieContainer = new System.Net.CookieContainer()
             };
 
-            return new HttpClient(handler);
+            HttpClient client = new HttpClient(handler);
+            client.Timeout = TimeSpan.FromSeconds(10);
+
+            return client;
         }
     }
 

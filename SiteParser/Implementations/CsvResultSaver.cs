@@ -36,19 +36,19 @@ namespace SiteParser.Implementations
 
         public async Task SaveResultsAsync()
         {
-            bool isNew = !File.Exists(_filePath);
-            using (FileStream fileStream = new FileStream(_filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            var isNew = !File.Exists(_filePath);
+            using (var fileStream = new FileStream(_filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
-                using (StreamWriter streamWriter = new StreamWriter(fileStream, Encoding.UTF8))
+                using (var streamWriter = new StreamWriter(fileStream, Encoding.UTF8))
                 {
                     var fields = GetFields();
 
                     if (isNew)
                         await streamWriter.WriteLineAsync(GetHeaderString(fields));
 
-                    while (_results.TryDequeue(out TResult result))
+                    while (_results.TryDequeue(out var result))
                     {
-                        string resultString = GetResultString(result, fields);
+                        var resultString = GetResultString(result, fields);
                         await streamWriter.WriteLineAsync(resultString);
                     }
                 }

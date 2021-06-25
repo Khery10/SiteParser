@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using SiteParser.Tools;
 
 
 namespace LMParser
@@ -36,46 +37,53 @@ namespace LMParser
 
         protected override string GetNextListUrl(string listContent)
         {
-            HtmlDocument listHtml = GetHtmlDoc(listContent);
+            var listHtml = GetHtmlDoc(listContent);
 
-            HtmlNode node = listHtml.DocumentNode.QuerySelector(".next-paginator-button");
+            var node = listHtml.DocumentNode.QuerySelector(".bex6mjh_plp.s15wh9uj_plp.l7pdtbg_plp.r1yi03lb_plp.sj1tk7s_plp");
             return node != null ? _siteUrl + node.GetAttributeValue<string>("href", null) : null;
         }
 
         protected override IEnumerable<string> GetItemsUrl(string listContent)
         {
-            HtmlDocument listHtml = GetHtmlDoc(listContent);
+            var listHtml = GetHtmlDoc(listContent);
 
-            var nodes = listHtml.DocumentNode.QuerySelectorAll(".plp-item__info__title");
-            foreach (HtmlNode node in nodes)
+            var nodes = listHtml.DocumentNode
+                .QuerySelectorAll(".bex6mjh_plp.b1f5t594_plp.p5y548z_plp.pblwt5z_plp.nf842wf_plp")
+                .ToArray();
+            
+            foreach (var node in nodes)
             {
-                string itemUrl = node.GetAttributeValue<string>("href", null);
-                if (!string.IsNullOrEmpty(itemUrl))
-                {
-                    string fullUrl = _siteUrl + itemUrl;
-                    yield return fullUrl;
-                }
+                var itemUrl = node.GetAttributeValue<string>("href", null);
+                if (string.IsNullOrEmpty(itemUrl)) continue;
+                
+                var fullUrl = _siteUrl + itemUrl;
+                yield return fullUrl;
             }
         }
 
-        protected override async Task<string> GetListContent(string listUrl)
-            => await HttpClient.GetStringAsync(listUrl);
+        protected override Task<string> GetListContent(string listUrl)
+            => Task.FromResult(GetWebDriverHtml(listUrl));
 
         protected override Task<string> GetItemContent(string itemUrl)
             => Task.FromResult(GetWebDriverHtml(itemUrl));
 
         protected override Task<LMProduct> GetParsingResult(string itemContent)
         {
-            LMProduct product = new LMProduct();
-            HtmlDocument itemHtml = GetHtmlDoc(itemContent);
+            var product = new LMProduct();
+            var itemHtml = GetHtmlDoc(itemContent);
 
-            product.Name = itemHtml.DocumentNode.QuerySelector("h1.header-2")?.InnerText;
+            product.Name = itemHtml.DocumentNode
+                .QuerySelector("h1.header-2")
+                ?.InnerText
+                ?.NormalizeInnerText();
 
-            HtmlNode colorTitleNode = itemHtml.DocumentNode.QuerySelectorAll("dt.def-list__term").FirstOrDefault(node => node.InnerText.Contains("Цвет"));
+            var colorTitleNode = itemHtml.DocumentNode.QuerySelectorAll("dt.def-list__term").FirstOrDefault(node => node.InnerText.Contains("Цвет"));
             if (colorTitleNode != null)
-                product.Color = colorTitleNode.ParentNode.QuerySelector("dd")?.InnerText;
+                product.Color = colorTitleNode.ParentNode.QuerySelector("dd")
+                    ?.InnerText
+                    ?.NormalizeInnerText();
 
-            HtmlNode pictureNode = itemHtml.DocumentNode.QuerySelector("[id='picture-box-id-generated-0']").QuerySelector("source");
+            var pictureNode = itemHtml.DocumentNode.QuerySelector("[id='picture-box-id-generated-0']").QuerySelector("source");
             product.Image = pictureNode.GetAttributeValue<string>("srcset", null);
 
             return Task.FromResult(product);
@@ -86,7 +94,7 @@ namespace LMParser
             if (string.IsNullOrEmpty(htmlContent))
                 throw new ArgumentNullException(nameof(htmlContent));
 
-            HtmlDocument document = new HtmlDocument();
+            var document = new HtmlDocument();
             document.LoadHtml(htmlContent);
 
             return document;
@@ -100,7 +108,7 @@ namespace LMParser
 
         private ChromeDriver CreateChromeDriver()
         {
-            ChromeOptions options = new ChromeOptions();
+            var options = new ChromeOptions();
             options.AddArgument("headless");
 
             return new ChromeDriver(options);
@@ -108,15 +116,7 @@ namespace LMParser
 
         private HttpClient CreateHttpClient()
         {
-            HttpClientHandler handler = new HttpClientHandler()
-            {
-                UseCookies = true,
-                CookieContainer = new System.Net.CookieContainer()
-            };
-
-            HttpClient client = new HttpClient(handler);
-            client.Timeout = TimeSpan.FromSeconds(10);
-
+            var client = new HttpClient {Timeout = TimeSpan.FromSeconds(10)};
             return client;
         }
     }

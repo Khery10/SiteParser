@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using SiteParser.Tools;
 
 namespace SiteParser
 {
@@ -26,21 +27,21 @@ namespace SiteParser
             if (string.IsNullOrEmpty(startListUrl))
                 throw new ArgumentNullException(nameof(startListUrl));
 
-            string listContent = await ParseListAsync(startListUrl);
+            var listContent = await ParseListAsync(startListUrl);
 
-            string listUrl;
-            while (!string.IsNullOrEmpty(listUrl = GetNextListUrl(listContent)))
-                listContent = await ParseListAsync(listUrl);
+            // string listUrl;
+            // while (!string.IsNullOrEmpty(listUrl = GetNextListUrl(listContent)))
+            //     listContent = await ParseListAsync(listUrl);
 
             await _resultSaver.SaveResultsAsync();
         }
 
         private async Task<string> ParseListAsync(string listUrl)
         {
-            string listContent = await GetListContent(listUrl);
-            foreach (string itemUrl in GetItemsUrl(listContent))
+            var listContent = await GetListContent(listUrl);
+            foreach (var itemUrl in GetItemsUrl(listContent))
             {
-                string itemContent = await GetItemContent(itemUrl);
+                var itemContent = await GetItemContent(itemUrl);
                 Console.WriteLine(itemUrl);
                 await ParseItemAsync(itemContent);
             }
@@ -50,7 +51,7 @@ namespace SiteParser
 
         private async Task ParseItemAsync(string itemContent)
         {
-            TResult result = await GetParsingResult(itemContent);
+            var result = await GetParsingResult(itemContent);
 
             if (result != null)
                 await _resultSaver.WriteResultAsync(result);
